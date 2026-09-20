@@ -13,8 +13,9 @@
             font-family: 'Inter', sans-serif;
             background-color: #080d19;
             color: #e2e8f0;
-            padding-top: env(safe-area-inset-top, 1rem);
-            padding-bottom: env(safe-area-inset-bottom, 1.5rem);
+            /* Margen superior garantizado para la barra de estado de Android */
+            padding-top: max(env(safe-area-inset-top), 2.75rem);
+            padding-bottom: max(env(safe-area-inset-bottom), 1.5rem);
         }
         .mono-num {
             font-family: 'JetBrains Mono', monospace;
@@ -144,9 +145,8 @@
             </div>
         </header>
 
-        <!-- Tarjeta Principal Contador (Corregida la superposición) -->
+        <!-- Tarjeta Principal Contador -->
         <section class="glow-card rounded-2xl p-4 sm:p-8 text-center flex flex-col items-center">
-            <!-- Badge Centrado con margen propio -->
             <div class="mb-2">
                 <span class="text-[10px] px-2.5 py-0.5 rounded-full badge-cyan uppercase tracking-wider font-mono font-bold inline-block">
                     Hora Perú (UTC-5)
