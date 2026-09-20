@@ -33,6 +33,20 @@ jobs:
           npx cap init "MODONGO" "com.ejemplo.modongo" --web-dir "www"
           npx cap add android
 
+      - name: Corregir conflicto de versiones Kotlin
+        run: |
+          # Inyecta la resolucion forzada de dependencias para evitar clases duplicadas de Kotlin
+          cat << 'EOF' >> android/app/build.gradle
+
+          configurations.all {
+              resolutionStrategy {
+                  force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
+                  force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22'
+                  force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22'
+              }
+          }
+          EOF
+
       - name: Compilar APK con Gradle
         run: |
           cd android
