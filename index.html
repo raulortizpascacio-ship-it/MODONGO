@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Panel de Ingresos en Vivo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #080d19;
+            color: #e2e8f0;
+            padding-top: env(safe-area-inset-top, 1rem);
+            padding-bottom: env(safe-area-inset-bottom, 1.5rem);
+        }
+        .mono-num {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .glow-gold {
+            color: #fef08a;
+            text-shadow: 0 0 15px rgba(250, 204, 21, 0.55), 0 0 30px rgba(250, 204, 21, 0.2);
+        }
+        .glow-card {
+            border: 1px solid rgba(20, 184, 166, 0.22);
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.85) 0%, rgba(10, 16, 31, 0.95) 100%);
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+        }
+        .glow-card:hover {
+            border-color: rgba(20, 184, 166, 0.45);
+        }
+        .badge-cyan {
+            background-color: rgba(13, 148, 136, 0.15);
+            color: #2dd4bf;
+            border: 1px solid rgba(45, 212, 191, 0.3);
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 34px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #334155;
+            transition: .25s;
+            border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 12px;
+            width: 12px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .25s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #10b981;
+        }
+        input:checked + .slider.slider-gold {
+            background-color: #f59e0b;
+        }
+        input:checked + .slider.slider-cyan {
+            background-color: #06b6d4;
+        }
+        input:checked + .slider:before {
+            transform: translateX(16px);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col p-3.5 sm:p-6 select-none">
+
+    <div class="max-w-4xl w-full mx-auto space-y-4">
+
+        <!-- Encabezado Móvil -->
+        <header class="space-y-3 border-b border-slate-800 pb-3">
+            <div class="group cursor-pointer active:opacity-80" onclick="abrirModalTitulo()">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></span>
+                    <h1 id="app-title" class="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                        Finanzas y Flujo en Vivo
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    </h1>
+                </div>
+                <p id="app-subtitle" class="text-xs text-slate-400 mt-0.5">Ingresos acumulados en tiempo real (Hora Perú - UTC-5).</p>
+            </div>
+
+            <!-- Grilla 2x2 para Controles y Botón Ingreso en Móvil -->
+            <div class="grid grid-cols-2 gap-2 pt-1">
+                <!-- Ticker Micro -->
+                <div class="flex items-center justify-between bg-slate-900/90 border border-slate-800 px-2.5 py-1.5 rounded-xl">
+                    <span class="text-[10.5px] font-medium text-slate-300 truncate">Micro</span>
+                    <div class="flex items-center gap-1">
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-sound-micro" onchange="actualizarPreferenciaAudio('micro', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                        <button onclick="probarSonido('micro', event)" class="text-[9px] font-bold px-1.5 py-0.5 bg-slate-800 text-emerald-400 rounded border border-emerald-950">Test</button>
+                    </div>
+                </div>
+
+                <!-- Ticker Céntimos -->
+                <div class="flex items-center justify-between bg-slate-900/90 border border-amber-950/60 px-2.5 py-1.5 rounded-xl">
+                    <span class="text-[10.5px] font-medium text-amber-300 truncate">Céntimo</span>
+                    <div class="flex items-center gap-1">
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-sound-cents" onchange="actualizarPreferenciaAudio('cents', this.checked)">
+                            <span class="slider slider-gold"></span>
+                        </label>
+                        <button onclick="probarSonido('cents', event)" class="text-[9px] font-bold px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded border border-amber-800/40">Test</button>
+                    </div>
+                </div>
+
+                <!-- Ticker % Mes -->
+                <div class="flex items-center justify-between bg-slate-900/90 border border-cyan-950/60 px-2.5 py-1.5 rounded-xl">
+                    <span class="text-[10.5px] font-medium text-cyan-300 truncate">% Mes</span>
+                    <div class="flex items-center gap-1">
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-sound-pct" onchange="actualizarPreferenciaAudio('pct', this.checked)">
+                            <span class="slider slider-cyan"></span>
+                        </label>
+                        <button onclick="probarSonido('pct', event)" class="text-[9px] font-bold px-1.5 py-0.5 bg-cyan-500/20 text-cyan-300 rounded border border-cyan-800/40">Test</button>
+                    </div>
+                </div>
+
+                <!-- Botón + Ingreso -->
+                <button onclick="abrirModalIngreso()" class="w-full py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-semibold transition-all shadow-md shadow-emerald-950 flex items-center justify-center gap-1.5 text-xs">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    <span>Ingreso</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Tarjeta Principal Contador (Corregida la superposición) -->
+        <section class="glow-card rounded-2xl p-4 sm:p-8 text-center flex flex-col items-center">
+            <!-- Badge Centrado con margen propio -->
+            <div class="mb-2">
+                <span class="text-[10px] px-2.5 py-0.5 rounded-full badge-cyan uppercase tracking-wider font-mono font-bold inline-block">
+                    Hora Perú (UTC-5)
+                </span>
+            </div>
+            
+            <span class="text-[11px] sm:text-xs uppercase tracking-widest text-slate-400 font-semibold block mb-1">
+                TOTAL GENERADO HASTA AHORA
+            </span>
+
+            <div id="total-generado" class="text-3xl sm:text-5xl md:text-6xl font-extrabold mono-num glow-gold my-2 tracking-tight">
+                S/ 0.00000
+            </div>
+
+            <div class="text-xs sm:text-sm text-slate-400 font-medium mt-1 leading-relaxed">
+                Generando <span id="tasa-mensual" class="text-emerald-400 font-semibold mono-num">S/ 0.00</span> por mes<br class="sm:hidden">
+                (<span id="pct-mes" class="text-cyan-400 font-semibold mono-num">0.000%</span> transcurrido)
+            </div>
+        </section>
+
+        <!-- Lista de Tarjetas / Proyectos -->
+        <section class="space-y-3">
+            <div class="flex justify-between items-center px-1">
+                <h2 class="text-sm font-semibold text-slate-300">Fuentes de Ingreso</h2>
+                <span id="contador-fuentes" class="text-[11px] text-slate-500 font-mono">0 ACTIVAS</span>
+            </div>
+
+            <div id="contenedor-tarjetas" class="grid grid-cols-1 md:grid-cols-2 gap-3.5"></div>
+        </section>
+
+    </div>
+
+    <!-- Modal Agregar / Editar -->
+    <div id="modal-ingreso" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-5 space-y-3.5 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
+                <h3 id="modal-ingreso-titulo" class="text-base font-bold text-white">Nuevo Ingreso</h3>
+                <button onclick="cerrarModalIngreso()" class="text-slate-400 hover:text-white text-2xl font-bold leading-none">&times;</button>
+            </div>
+            <form id="formulario-ingreso" onsubmit="guardarIngreso(event)" class="space-y-3 text-left">
+                <input type="hidden" id="edit-id" value="">
+                <div>
+                    <label class="block text-[10.5px] font-semibold text-slate-400 uppercase mb-1">Nombre / Cliente</label>
+                    <input type="text" id="input-nombre" required placeholder="Ej. Cliente Web" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-[10.5px] font-semibold text-slate-400 uppercase mb-1">Monto Mensual (S/)</label>
+                    <input type="number" step="0.01" id="input-monto" required placeholder="150.00" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono">
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-[10.5px] font-semibold text-slate-400 uppercase">Inicio (Perú)</label>
+                        <button type="button" onclick="setInicioDeMes()" class="text-[11px] text-emerald-400 underline">Inicio de mes</button>
+                    </div>
+                    <input type="datetime-local" id="input-fecha" required class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono">
+                </div>
+                <div class="flex gap-2.5 pt-2">
+                    <button type="button" onclick="cerrarModalIngreso()" class="w-1/2 py-2 rounded-lg border border-slate-700 text-slate-300 text-sm">Cancelar</button>
+                    <button type="submit" class="w-1/2 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Título -->
+    <div id="modal-titulo" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-5 space-y-3.5 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
+                <h3 class="text-base font-bold text-white">Editar Título</h3>
+                <button onclick="cerrarModalTitulo()" class="text-slate-400 hover:text-white text-2xl font-bold leading-none">&times;</button>
+            </div>
+            <form onsubmit="guardarTitulo(event)" class="space-y-3 text-left">
+                <div>
+                    <label class="block text-[10.5px] font-semibold text-slate-400 uppercase mb-1">Título</label>
+                    <input type="text" id="input-app-title" required class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-[10.5px] font-semibold text-slate-400 uppercase mb-1">Subtítulo</label>
+                    <input type="text" id="input-app-subtitle" required class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <div class="flex gap-2.5 pt-2">
+                    <button type="button" onclick="cerrarModalTitulo()" class="w-1/2 py-2 rounded-lg border border-slate-700 text-slate-300 text-sm">Cancelar</button>
+                    <button type="submit" class="w-1/2 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm">Actualizar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script de Lógica -->
+    <script>
+        let configApp = JSON.parse(localStorage.getItem('app_config')) || {
+            title: "Finanzas y Flujo en Vivo",
+            subtitle: "Ingresos acumulados en tiempo real (Hora Perú - UTC-5)."
+        };
+
+        let configSonidos = JSON.parse(localStorage.getItem('app_audio_config')) || {
+            micro: false,
+            cents: true,
+            pct: false
+        };
+
+        let fuentes = JSON.parse(localStorage.getItem('fuentes_ingresos')) || [
+            {
+                id: 1,
+                nombre: 'Cliente Principal',
+                montoMensual: 2000.00,
+                fechaInicio: '2026-09-01T00:00'
+            },
+            {
+                id: 2,
+                nombre: 'Fisca2',
+                montoMensual: 900.00,
+                fechaInicio: '2026-09-01T00:00'
+            }
+        ];
+
+        let audioCtx = null;
+        let ultimoTexto5Dec = "";
+        let ultimoCentimoEntero = null;
+        let ultimoTextoPct = "";
+
+        function getPeruDate() {
+            const ahora = new Date();
+            const utc = ahora.getTime() + (ahora.getTimezoneOffset() * 60000);
+            return new Date(utc - (3600000 * 5));
+        }
+
+        function aplicarConfiguracionTitulos() {
+            document.getElementById('app-title').firstChild.textContent = configApp.title + " ";
+            document.getElementById('app-subtitle').innerText = configApp.subtitle;
+        }
+
+        function abrirModalTitulo() {
+            document.getElementById('input-app-title').value = configApp.title;
+            document.getElementById('input-app-subtitle').value = configApp.subtitle;
+            document.getElementById('modal-titulo').classList.remove('hidden');
+            document.getElementById('modal-titulo').classList.add('flex');
+        }
+
+        function cerrarModalTitulo() {
+            document.getElementById('modal-titulo').classList.add('hidden');
+            document.getElementById('modal-titulo').classList.remove('flex');
+        }
+
+        function guardarTitulo(e) {
+            e.preventDefault();
+            configApp.title = document.getElementById('input-app-title').value;
+            configApp.subtitle = document.getElementById('input-app-subtitle').value;
+            localStorage.setItem('app_config', JSON.stringify(configApp));
+            aplicarConfiguracionTitulos();
+            cerrarModalTitulo();
+        }
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function actualizarPreferenciaAudio(tipo, valor) {
+            configSonidos[tipo] = valor;
+            localStorage.setItem('app_audio_config', JSON.stringify(configSonidos));
+            if (valor) initAudioContext();
+        }
+
+        function playTickMicro(force = false) {
+            if ((!configSonidos.micro && !force) || !audioCtx) return;
+            try {
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(2600, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.015);
+
+                gain.gain.setValueAtTime(0.015, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.015);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.015);
+            } catch(e) {}
+        }
+
+        function playTickCent(force = false) {
+            if ((!configSonidos.cents && !force) || !audioCtx) return;
+            try {
+                const now = audioCtx.currentTime;
+                const osc1 = audioCtx.createOscillator();
+                const osc2 = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc1.type = 'sine';
+                osc2.type = 'sine';
+                osc1.frequency.setValueAtTime(2489.02, now);
+                osc2.frequency.setValueAtTime(4978.03, now);
+
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc1.start(now);
+                osc2.start(now);
+                osc1.stop(now + 0.35);
+                osc2.stop(now + 0.35);
+            } catch(e) {}
+        }
+
+        function playTickPct(force = false) {
+            if ((!configSonidos.pct && !force) || !audioCtx) return;
+            try {
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, now);
+                osc.frequency.exponentialRampToValueAtTime(440, now + 0.04);
+
+                gain.gain.setValueAtTime(0.04, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.04);
+            } catch(e) {}
+        }
+
+        function probarSonido(tipo, e) {
+            if (e) e.stopPropagation();
+            initAudioContext();
+            
+            if (!configSonidos[tipo]) {
+                configSonidos[tipo] = true;
+                localStorage.setItem('app_audio_config', JSON.stringify(configSonidos));
+                if (tipo === 'micro') document.getElementById('toggle-sound-micro').checked = true;
+                if (tipo === 'cents') document.getElementById('toggle-sound-cents').checked = true;
+                if (tipo === 'pct') document.getElementById('toggle-sound-pct').checked = true;
+            }
+
+            if (tipo === 'micro') playTickMicro(true);
+            if (tipo === 'cents') playTickCent(true);
+            if (tipo === 'pct') playTickPct(true);
+        }
+
+        function guardarEnStorage() {
+            localStorage.setItem('fuentes_ingresos', JSON.stringify(fuentes));
+        }
+
+        function setInicioDeMes() {
+            const fecha = getPeruDate();
+            const anio = fecha.getFullYear();
+            const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+            document.getElementById('input-fecha').value = `${anio}-${mes}-01T00:00`;
+        }
+
+        function abrirModalIngreso(id = null) {
+            initAudioContext();
+            const form = document.getElementById('formulario-ingreso');
+            form.reset();
+
+            if (id) {
+                const item = fuentes.find(f => f.id === id);
+                if (!item) return;
+                document.getElementById('modal-ingreso-titulo').innerText = "Editar Ingreso";
+                document.getElementById('edit-id').value = item.id;
+                document.getElementById('input-nombre').value = item.nombre;
+                document.getElementById('input-monto').value = item.montoMensual;
+                document.getElementById('input-fecha').value = item.fechaInicio;
+            } else {
+                document.getElementById('modal-ingreso-titulo').innerText = "Nuevo Ingreso";
+                document.getElementById('edit-id').value = "";
+                const fecha = getPeruDate();
+                document.getElementById('input-fecha').value = fecha.toISOString().slice(0, 16);
+            }
+
+            document.getElementById('modal-ingreso').classList.remove('hidden');
+            document.getElementById('modal-ingreso').classList.add('flex');
+        }
+
+        function cerrarModalIngreso() {
+            document.getElementById('modal-ingreso').classList.add('hidden');
+            document.getElementById('modal-ingreso').classList.remove('flex');
+        }
+
+        function guardarIngreso(e) {
+            e.preventDefault();
+            const editId = document.getElementById('edit-id').value;
+            const nombre = document.getElementById('input-nombre').value;
+            const monto = parseFloat(document.getElementById('input-monto').value);
+            const fecha = document.getElementById('input-fecha').value;
+
+            if (editId) {
+                const index = fuentes.findIndex(f => f.id == editId);
+                if (index !== -1) {
+                    fuentes[index].nombre = nombre;
+                    fuentes[index].montoMensual = monto;
+                    fuentes[index].fechaInicio = fecha;
+                }
+            } else {
+                fuentes.push({
+                    id: Date.now(),
+                    nombre: nombre,
+                    montoMensual: monto,
+                    fechaInicio: fecha
+                });
+            }
+
+            guardarEnStorage();
+            renderizarTarjetas();
+            cerrarModalIngreso();
+        }
+
+        function eliminarIngreso(id) {
+            if (confirm("¿Estás seguro de eliminar este registro?")) {
+                fuentes = fuentes.filter(f => f.id !== id);
+                guardarEnStorage();
+                renderizarTarjetas();
+            }
+        }
+
+        function renderizarTarjetas() {
+            const contenedor = document.getElementById('contenedor-tarjetas');
+            document.getElementById('contador-fuentes').innerText = `${fuentes.length} ACTIVAS`;
+            
+            let tasaMensualTotal = 0;
+            contenedor.innerHTML = '';
+
+            fuentes.forEach(item => {
+                tasaMensualTotal += item.montoMensual;
+                const tarjeta = document.createElement('div');
+                tarjeta.className = 'glow-card rounded-xl p-4 flex flex-col justify-between';
+                tarjeta.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-center mb-2.5">
+                            <h3 class="font-bold text-white text-sm tracking-wide truncate max-w-[160px]">${item.nombre}</h3>
+                            <div class="flex items-center gap-1.5">
+                                <span class="badge-cyan text-[9px] px-2 py-0.5 rounded font-semibold uppercase">Activo</span>
+                                <button onclick="abrirModalIngreso(${item.id})" class="text-slate-400 hover:text-emerald-400 p-1" title="Editar">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                </button>
+                                <button onclick="eliminarIngreso(${item.id})" class="text-slate-400 hover:text-rose-400 p-1" title="Eliminar">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="space-y-1 text-xs text-slate-400 mb-3 font-medium">
+                            <div class="flex justify-between">
+                                <span>Costo Mensual:</span>
+                                <span class="text-slate-200 font-mono">S/ ${item.montoMensual.toFixed(2)}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Fecha Inicio:</span>
+                                <span class="text-slate-200 font-mono">${item.fechaInicio.replace('T', ' ')}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-t border-slate-800/80 pt-2 text-center bg-slate-950/40 rounded-lg p-2">
+                        <span class="text-[9px] uppercase tracking-wider text-amber-400 font-bold block mb-0.5">GENERADO HASTA AHORA</span>
+                        <div id="monto-card-${item.id}" class="text-base font-bold mono-num text-amber-300">
+                            S/ 0.00000
+                        </div>
+                    </div>
+                `;
+                contenedor.appendChild(tarjeta);
+            });
+
+            document.getElementById('tasa-mensual').innerText = `S/ ${tasaMensualTotal.toFixed(2)}`;
+        }
+
+        function loopCalculo() {
+            const fechaPeru = getPeruDate();
+            const ahoraMs = fechaPeru.getTime();
+            
+            const anio = fechaPeru.getFullYear();
+            const mes = fechaPeru.getMonth();
+            const inicioMesMs = new Date(Date.UTC(anio, mes, 1, 5, 0, 0)).getTime();
+            const finMesMs = new Date(Date.UTC(anio, mes + 1, 1, 5, 0, 0)).getTime();
+            
+            const duracionMesMs = finMesMs - inicioMesMs;
+            const transcurridoMesMs = Math.max(0, Math.min(duracionMesMs, ahoraMs - inicioMesMs));
+            
+            const porcentajeMes = (transcurridoMesMs / duracionMesMs) * 100;
+            const textoPct = `${porcentajeMes.toFixed(3)}%`;
+            document.getElementById('pct-mes').innerText = textoPct;
+
+            if (ultimoTextoPct !== "" && textoPct !== ultimoTextoPct) {
+                playTickPct();
+            }
+            ultimoTextoPct = textoPct;
+
+            const segundosMesActual = duracionMesMs / 1000;
+            let acumuladoTotal = 0;
+
+            fuentes.forEach(item => {
+                const inicioMs = new Date(item.fechaInicio + "-05:00").getTime();
+                const segundosTranscurridos = Math.max(0, (ahoraMs - inicioMs) / 1000);
+                const solesPorSegundo = item.montoMensual / segundosMesActual;
+                const totalTarjeta = segundosTranscurridos * solesPorSegundo;
+                
+                acumuladoTotal += totalTarjeta;
+
+                const elem = document.getElementById(`monto-card-${item.id}`);
+                if (elem) {
+                    elem.innerText = `S/ ${totalTarjeta.toFixed(5)}`;
+                }
+            });
+
+            const texto5Dec = acumuladoTotal.toFixed(5);
+            document.getElementById('total-generado').innerText = `S/ ${texto5Dec}`;
+
+            if (fuentes.length > 0) {
+                const céntimosActuales = Math.floor(acumuladoTotal * 100);
+                if (ultimoCentimoEntero !== null && céntimosActuales > ultimoCentimoEntero) {
+                    playTickCent();
+                }
+                ultimoCentimoEntero = céntimosActuales;
+
+                if (ultimoTexto5Dec !== "" && texto5Dec !== ultimoTexto5Dec) {
+                    playTickMicro();
+                }
+            }
+
+            ultimoTexto5Dec = texto5Dec;
+
+            requestAnimationFrame(loopCalculo);
+        }
+
+        window.addEventListener('click', initAudioContext, { once: true });
+        window.addEventListener('touchstart', initAudioContext, { once: true });
+
+        document.getElementById('toggle-sound-micro').checked = configSonidos.micro;
+        document.getElementById('toggle-sound-cents').checked = configSonidos.cents;
+        document.getElementById('toggle-sound-pct').checked = configSonidos.pct;
+
+        aplicarConfiguracionTitulos();
+        renderizarTarjetas();
+        loopCalculo();
+    </script>
+</body>
+</html>
